@@ -1,6 +1,7 @@
 {
   "name": "bitcoin-alert-bot",
   "version": "1.0.0",
+  "private": true,
   "description": "a coin alert bot using facebook chat api",
   "main": "app.js",
   "scripts": {
