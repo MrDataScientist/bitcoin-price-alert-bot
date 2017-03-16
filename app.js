@@ -7,6 +7,7 @@ const config = require('./config.js')
 
 const poloniex = new Poloniex();
 let previousPrices;
+let threadList = [];
 
 const bot = () => {
   login({ email: config.email, password: config.password }, (err, api) => {
@@ -14,8 +15,7 @@ const bot = () => {
       setInterval(bot, 1000 * 10);
       return console.error(err);
     }
-    sendInitialMessage(api);
-    monitorPrices(api);
+    initialize(api);
 
     api.listen((listenError, message) => {
       if (!listenError) {
@@ -29,6 +29,25 @@ const bot = () => {
   });
 };
 
+function initialize(api) {
+  console.log('Getting thread list...');
+  api.getThreadList(null, null, 'inbox', (err, arr) => {
+    if (err) {
+      console.log('Error: Thread list not fetched. Retry in 5 seconds.');
+      setTimeout(() => initialize(api), 1000 * 5);
+    } else {
+      console.log('Thread list fetched.');
+      threadList = arr;
+
+      console.log('Sending initial message...');
+      sendInitialMessage(api);
+
+      console.log('Start monitoring prices.');
+      monitorPrices(api);
+    }
+  });
+}
+
 function sendInitialMessage(api) {
   let text = `Hi! I'm price alert bot!\nI'm monitoring the prices of\n`;
   config.alert_coin_pairs.map((coin_pair) => {
@@ -36,7 +55,10 @@ function sendInitialMessage(api) {
   });
   text += `and if a price changes over +- ${config.alert_rate * 100}% in ${config.alert_time_interval} seconds, I will tell you immediately!`
 
-  api.sendMessage(text, config.thread_id);
+  threadList.map((thread) => {
+    api.sendMessage(text, thread.threadID);
+    console.log(`Initial message sent to thread ${thread.threadID}`);
+  });
 }
 
 function monitorPrices(api) {
@@ -62,8 +84,10 @@ function monitorPrices(api) {
         });
         // if text not empty, send the alert
         if (text) {
-          api.sendMessage(text, config.thread_id);
-          console.log(`message sent: ${text}`);
+          threadList.map((thread) => {
+            api.sendMessage(text, thread.threadID);
+            console.log(`Message '${text}' sent to thread ${thread.threadID}`);
+          });
         }
         previousPrices = response;
       }
