@@ -63,7 +63,7 @@ function sendInitialMessage(api) {
 
 function monitorPrices(api) {
   poloniex.returnTicker((err, response) => {
-    if (err) {
+    if (err || !response) {
       console.log(`Error: prices not fetched. Retry in 5 seconds`);
       setTimeout(() => monitorPrices(api), 1000 * 5); // try again in 5 seconds
     } else {
@@ -98,7 +98,7 @@ function monitorPrices(api) {
 
 function returnPrices(api, message) {
   poloniex.returnTicker((err, response) => {
-    if (err) {
+    if (err || !response) {
       console.log(`Error: prices not fetched. Retry in 5 seconds`);
       setTimeout(() => returnPrices(api, message), 1000 * 5); // try again in 5 seconds
     } else {
