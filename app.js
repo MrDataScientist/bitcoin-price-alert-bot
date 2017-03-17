@@ -72,24 +72,31 @@ function monitorPrices(api) {
         previousPrices = response;
       } else {
         console.log('prices fetched');
-        // for each coin pair, check if the rate of change is greater than the threshold
-        let text = '';
-        config.alert_coin_pairs.map((coin_pair) => {
-          const currPrice = parseFloat(response[coin_pair].last);
-          const prevPrice = parseFloat(previousPrices[coin_pair].last);
-          const rate = (currPrice - prevPrice) / prevPrice;
-          if (Math.abs(rate) > config.alert_rate) {
-            text += `Price of ${coin_pair} changes \nfrom ${prevPrice} \nto ${currPrice} in ${config.alert_time_interval} seconds.\nRate of change: ${(rate*100).toFixed(2)}%\n`;
-          }
-        });
-        // if text not empty, send the alert
-        if (text) {
-          threadList.map((thread) => {
-            api.sendMessage(text, thread.threadID);
-            console.log(`Message '${text}' sent to thread ${thread.threadID}`);
+        try {
+          // for each coin pair, check if the rate of change is greater than the threshold
+          let text = '';
+          config.alert_coin_pairs.map((coin_pair) => {
+            const currPrice = parseFloat(response[coin_pair].last);
+            const prevPrice = parseFloat(previousPrices[coin_pair].last);
+            const rate = (currPrice - prevPrice) / prevPrice;
+            if (Math.abs(rate) > config.alert_rate) {
+              text += `${coin_pair} ${currPrice > prevPrice ? '▲' : '▼'}${(rate*100).toFixed(2)}%\nfrom ${prevPrice} \nto ${currPrice} in ${config.alert_time_interval} seconds.\n`;
+            }
           });
+          // if text not empty, send the alert
+          if (text) {
+            threadList.map((thread) => {
+              api.sendMessage(text, thread.threadID);
+              console.log(`Message '${text}' sent to thread ${thread.threadID}`);
+            });
+          }
+          previousPrices = response;
         }
-        previousPrices = response;
+        catch(err) {
+          console.log('Error in monitorPrices: prices fetched but something went wrong');
+          console.log('err: ', err);
+          console.log('response: ', response);
+        }
       }
       setTimeout(() => monitorPrices(api), 1000 * config.alert_time_interval);
     }
@@ -102,12 +109,19 @@ function returnPrices(api, message) {
       console.log(`Error: prices not fetched. Retry in 5 seconds`);
       setTimeout(() => returnPrices(api, message), 1000 * 5); // try again in 5 seconds
     } else {
-      let text = ``;
-      config.alert_coin_pairs.map(coin_pair => {
-        text += `${coin_pair}: ${response[coin_pair].last} ${response[coin_pair].percentChange}\n`;
-      });
-      console.log(message.threadID);
-      api.sendMessage(text, message.threadID);
+      try {
+        let text = ``;
+        config.alert_coin_pairs.map(coin_pair => {
+          text += `${coin_pair}: ${response[coin_pair].last} ${response[coin_pair].percentChange}\n`;
+        });
+        console.log(message.threadID);
+        api.sendMessage(text, message.threadID);
+      }
+      catch(err) {
+        console.log('Error in returnPrices: prices fetched but something went wrong');
+        console.log('err: ', err);
+        console.log('response: ', response);
+      }
     }
   });
 }
