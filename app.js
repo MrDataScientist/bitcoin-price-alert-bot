@@ -39,8 +39,8 @@ function initialize(api) {
       console.log('Thread list fetched.');
       threadList = arr;
 
-      console.log('Sending initial message...');
-      sendInitialMessage(api);
+      // console.log('Sending initial message...');
+      // sendInitialMessage(api);
 
       console.log('Start monitoring prices.');
       monitorPrices(api);
